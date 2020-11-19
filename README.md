@@ -1,7 +1,10 @@
 # raspi-photogrammetry
 Raspberry Pi macro focus-stacking photogrammetry machine 
 
-Parts (most of them)
+## Companion App
+You will need to stop the preview before you run the full routine. For some reason the preview doesn't like the full resolution.
+
+## Parts (most of them)
 
 Smartphone Lens kit - The macro lens screws onto the telephoto lens. Happy accident on my part.
 https://www.amazon.com/Entertainments-Professional-Telephoto-Control-Universal/dp/B07N3158VR/ref=sr_1_13?dchild=1&keywords=Smartphone+Camera+Lens+Kit%2C+12x+Zoom+Telephoto+Lens+with+0.45X+Wide+Angle+Lens+%2B+15X+Super+Macro+Lens+With+Clip+For+iPhones%2C+Samsung%2C+HTC+Camera+Phone&qid=1605736536&sr=8-13
