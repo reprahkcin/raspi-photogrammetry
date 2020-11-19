@@ -9,8 +9,8 @@ camera = PiCamera()
 #camera.resolution = (3040, 3040)
 camera.resolution = (1024,768)
 camera.awb_mode = 'fluorescent'
-camera.awb_gains = 2.2
-camera.brightness = 44
+camera.awb_gains = 2.1
+camera.brightness = 31
 camera.contrast = 44
 camera.iso = 400
 camera.shutter_speed = 1000
@@ -20,12 +20,12 @@ print ("The current working directory is %s" % path)
 
 objectName = "shot"
 
-#New Turntable - A4988 and Nema 17
+#New Turntable
 enablePin = 5
 dirPin = 13
 stepPin = 6
 
-#Stack Rig Motor 
+#Stack Rig Motor
 in1_2 = 17
 in2_2 = 27
 in3_2 = 22
@@ -34,7 +34,7 @@ in4_2 = 23
 sliderPosition = 0
 turnTablePosition = 0
 
-sleepTime = 0.002 #time in between motor steps (turntable Nema 17)
+sleepTime = 0.002 #time in between motor steps
 sleepTimeRotate = 0.01
 shotNumber = 1 #counter for naming shots in stack sequentially
 stackNumber = 1 # counter for folder naming in full routine
@@ -212,6 +212,7 @@ def goHome():
 
 def runStackRoutine():
     global camera
+    camera.stop_preview
     camera.resolution = (4056,3040)
     global objectName
     global stackNumber
@@ -241,6 +242,9 @@ def runFullRoutine():
     
 def camPreviewWindowed():
     camera.start_preview(fullscreen=False, window=(50,150,1024,576))
+    
+def camStopPreview():
+    camera.stop_preview
     
 def changeAWBGains(slider_value):
     global camera
