@@ -20,12 +20,12 @@ print ("The current working directory is %s" % path)
 
 objectName = "shot"
 
-#New Turntable
+#New Turntable - A4988 and Nema 17
 enablePin = 5
 dirPin = 13
 stepPin = 6
 
-#Stack Rig Motor
+#Stack Rig Motor 
 in1_2 = 17
 in2_2 = 27
 in3_2 = 22
@@ -34,7 +34,7 @@ in4_2 = 23
 sliderPosition = 0
 turnTablePosition = 0
 
-sleepTime = 0.002 #time in between motor steps
+sleepTime = 0.002 #time in between motor steps (turntable Nema 17)
 sleepTimeRotate = 0.01
 shotNumber = 1 #counter for naming shots in stack sequentially
 stackNumber = 1 # counter for folder naming in full routine
