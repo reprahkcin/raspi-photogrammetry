@@ -3,6 +3,9 @@ Raspberry Pi macro focus-stacking photogrammetry machine
 
 ## Companion App
 You will need to stop the preview before you run the full routine. For some reason the preview doesn't like the full resolution.
+This can be helped by increasing the GPU memory in the raspi-config options Don't put it above 512, though, as it won't boot and you'll have to manually change the boot config file.
+
+I added the ability to drive a larger stepper motor for a DSLR attachment. 
 
 ## Parts (most of them)
 
