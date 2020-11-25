@@ -5,25 +5,30 @@ from picamera import PiCamera
 import os
 
 camera = PiCamera()
-#camera.resolution = (4056, 3040)
+camera.resolution = (4056, 3040)
 #camera.resolution = (3040, 3040)
-camera.resolution = (1024,768)
-camera.awb_mode = 'fluorescent'
-camera.awb_gains = 2.1
-camera.brightness = 31
-camera.contrast = 44
-camera.iso = 400
-camera.shutter_speed = 1000
+#camera.resolution = (1024,768)
+#camera.awb_mode = 'fluorescent'
+#camera.awb_gains = 2.1
+#camera.brightness = 54
+#camera.contrast = 44
+#camera.iso = 400
+#camera.shutter_speed = 1000
 
 path = os.getcwd()
 print ("The current working directory is %s" % path)
 
 objectName = "shot"
 
-#New Turntable
+#Turntable
 enablePin = 5
 dirPin = 13
 stepPin = 6
+
+#DSLR Slider (Nema 17)
+dslrEnablePin = 20
+dslrDirPin = 12
+dslrStepPin = 16
 
 #Stack Rig Motor
 in1_2 = 17
@@ -31,25 +36,27 @@ in2_2 = 27
 in3_2 = 22
 in4_2 = 23
 
+dslrSliderPosition = 0
 sliderPosition = 0
 turnTablePosition = 0
 
 sleepTime = 0.002 #time in between motor steps
-sleepTimeRotate = 0.01
+#sleepTimeRotate = 0.01
+nemaSleepTime = 0.001 #time between steps (Nema 17)
+shotPause = 2 #time between motor moves and shots - to settle camera
+
 shotNumber = 1 #counter for naming shots in stack sequentially
 stackNumber = 1 # counter for folder naming in full routine
-shotPause = 0.5 #time between motor moves and shots - to settle camera
-
 
 cyclesRotation = 8 #number of PWM cycles for the turntable in one motion segment
 cyclesLinear = 10 #number of PWM cycles for the focus rack in one motion segment 
+dslrCyclesLinear = 10 #number of PWN cycles for the focus rack in one motion segment (Nema 17)
 
 numberShots = 10 #number of shots in each stack
 numberStacks = 70 #number of stacks in the routine
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-
 
 GPIO.setup(in1_2, GPIO.OUT)
 GPIO.setup(in2_2, GPIO.OUT)
@@ -60,8 +67,11 @@ GPIO.setup(enablePin, GPIO.OUT)
 GPIO.setup(dirPin, GPIO.OUT)
 GPIO.setup(stepPin, GPIO.OUT)
 
-turntableSleepTime = 0.01
+GPIO.setup(dslrEnablePin, GPIO.OUT)
+GPIO.setup(dslrDirPin, GPIO.OUT)
+GPIO.setup(dslrStepPin, GPIO.OUT)
 
+#Turntable Motion
 def clockwise():
     global cyclesRotation
     segment = cyclesRotation
@@ -70,9 +80,9 @@ def clockwise():
         GPIO.output(enablePin, GPIO.LOW)
         GPIO.output(dirPin, GPIO.HIGH)
         GPIO.output(stepPin, GPIO.HIGH)
-        time.sleep(turntableSleepTime)
+        time.sleep(nemaSleepTime)
         GPIO.output(stepPin, GPIO.LOW)
-        time.sleep(turntableSleepTime)
+        time.sleep(nemaSleepTime)
         segment -= 1
     disableMotors()
         
@@ -84,13 +94,42 @@ def counterClockwise():
         GPIO.output(enablePin, GPIO.LOW)
         GPIO.output(dirPin, GPIO.LOW)
         GPIO.output(stepPin, GPIO.HIGH)
-        time.sleep(turntableSleepTime)
+        time.sleep(nemaSleepTime)
         GPIO.output(stepPin, GPIO.LOW)
-        time.sleep(turntableSleepTime)
+        time.sleep(nemaSleepTime)
+        segment -= 1
+    disableMotors()
+
+#DSLR Slider
+def dslrForward():
+    global dslrCyclesLinear
+    segment = dslrCyclesLinear
+    print(segment)
+    while (segment > 0):
+        GPIO.output(dslrEnablePin, GPIO.LOW)
+        GPIO.output(dslrDirPin, GPIO.HIGH)
+        GPIO.output(dslrStepPin, GPIO.HIGH)
+        time.sleep(nemaSleepTime)
+        GPIO.output(dslrStepPin, GPIO.LOW)
+        time.sleep(nemaSleepTime)
         segment -= 1
     disableMotors()
         
+def dslrReverse():
+    global dslrCyclesLinear
+    segment = dslrCyclesLinear
+    print(segment)
+    while (segment > 0):
+        GPIO.output(dslrEnablePin, GPIO.LOW)
+        GPIO.output(dslrDirPin, GPIO.LOW)
+        GPIO.output(dslrStepPin, GPIO.HIGH)
+        time.sleep(nemaSleepTime)
+        GPIO.output(dslrStepPin, GPIO.LOW)
+        time.sleep(nemaSleepTime)
+        segment -= 1
+    disableMotors()
 
+#Raspberry Pi HQ Camera Slider
 def forward():
     global cyclesLinear
     print("Your camera is moving forward in " + str(cyclesLinear) + " step increments")
@@ -122,8 +161,6 @@ def forward():
         segment -= 1
     disableMotors()
     
-        
-
 def reverse():
     global cyclesLinear
     print("Your camera is moving in reverse in " + str(cyclesLinear) + " step increments")
@@ -154,7 +191,9 @@ def reverse():
         time.sleep(sleepTime)
         segment -= 1
     disableMotors()
-    
+
+
+#Interface Functions
 def zeroSlider():
     global sliderPosition
     sliderPosition = 0
@@ -169,6 +208,7 @@ def disableMotors():
     GPIO.output(in3_2, GPIO.LOW)
     GPIO.output(in4_2, GPIO.LOW)
     GPIO.output(enablePin, GPIO.HIGH)
+    GPIO.output(dslrEnablePin, GPIO.HIGH)
 
 
 
@@ -181,6 +221,11 @@ def changeCyclesLinear(slider_value):
     global cyclesLinear
     cyclesLinear = int(slider_value)
     print("Your camera will move in " + str(cyclesLinear) + " step increments")
+    
+def changeDslrCyclesLinear(slider_value):
+    global dslrCyclesLinear
+    dslrCyclesLinear = int(slider_value)
+    print("Your camera will move in " + str(dslrCyclesLinear) + " step increments")
 
 def changeNumberShots(slider_value):
     global numberShots
@@ -209,6 +254,14 @@ def goHome():
     cyclesLinear = sliderPosition
     reverse()
     cyclesLinear = temp
+    
+def dslrGoHome():
+    global dslrSliderPosition
+    global dslrCyclesLinear
+    temp = dslrCyclesLinear
+    dslrCyclesLinear = dslrSliderPosition
+    dslrReverse()
+    dslrCyclesLinear = temp
 
 def runStackRoutine():
     global camera
@@ -261,10 +314,10 @@ def changeContrast(slider_value):
     camera.contrast = int(slider_value)
     print("Contrast = " + str(slider_value))
     
-app = App(title="3D Scanner Companion", height="830", width="400")
+app = App(title="3D Scanner Companion", height="1000", width="400")
 
 
-welcome_message = Text(app, text="Enter the name of your object:" )
+welcome_message = Text(app, text="Enter the name of your project:" )
 objectName = TextBox(app, width=30)
 spacer = Text(app, text="")
 label = Text(app, text="AWB Gains")
@@ -286,16 +339,16 @@ PushButton(sliderBox, command=reverse, text="Camera Pull", grid=[0,0])
 
 Slider(app, command=changeCyclesLinear, start=0, end=1000, width=300)
 spacer = Text(app, text="Distance Between Shots in Stack")
-Slider(app, command=changeNumberShots, start=0, end=75, width=300)
+Slider(app, command=changeNumberShots, start=0, end=150, width=300)
 spacer = Text(app, text="# of Shots in Stack")
 spacer = Text(app, text="")
 
 
 
 actionBox = Box(app, layout="grid")
-PushButton(actionBox, command=shoot, text="Take Shot", grid=[0,0])
+PushButton(actionBox, command=shoot(path), text="Take Shot", grid=[0,0])
 PushButton(actionBox, command=zeroSlider, text="Zero Slider", grid=[1,0])
-PushButton(actionBox, command=goHome, text="Home", grid=[2,0])
+PushButton(actionBox, command=goHome, text="Go Home", grid=[2,0])
 PushButton(actionBox, command=runStackRoutine, text="Shoot Stack", grid=[3,0])
           
 
@@ -309,6 +362,13 @@ spacer = Text(app, text="Rotational Degrees Between Stacks")
 Slider(app, command=changeNumberStacks, start=0, end=100, width=300)
 spacer = Text(app, text="Number of Stacks in Routine")
 spacer = Text(app, text="")
+
+dslrSliderBox = Box(app, layout="grid")
+PushButton(dslrSliderBox, command=dslrForward, text="DSLR Forward", grid=[1,0])
+PushButton(dslrSliderBox, command=dslrReverse, text="DSLR Reverse", grid=[0,0])
+PushButton(dslrSliderBox, command=dslrGoHome, text="Send DSLR Home", grid=[2,0])
+Slider(app, command=changeDslrCyclesLinear, start=0, end=10000, width=300)
+spacer = Text(app, text="Distance Between DSLR Positions")
 
 PushButton(app, command=runFullRoutine, text="Run Full Routine")
 
