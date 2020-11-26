@@ -3,6 +3,8 @@ import RPi.GPIO as GPIO
 import time
 from picamera import PiCamera
 import os
+import dslrCapture as dslr
+
 
 camera = PiCamera()
 camera.resolution = (4056, 3040)
@@ -44,6 +46,7 @@ sleepTime = 0.002 #time in between motor steps
 #sleepTimeRotate = 0.01
 nemaSleepTime = 0.001 #time between steps (Nema 17)
 shotPause = 2 #time between motor moves and shots - to settle camera
+dslrShotPause = 5
 
 shotNumber = 1 #counter for naming shots in stack sequentially
 stackNumber = 1 # counter for folder naming in full routine
@@ -78,7 +81,7 @@ def clockwise():
     print(segment)
     while (segment > 0):
         GPIO.output(enablePin, GPIO.LOW)
-        GPIO.output(dirPin, GPIO.HIGH)
+        GPIO.output(dirPin, GPIO.LOW)
         GPIO.output(stepPin, GPIO.HIGH)
         time.sleep(nemaSleepTime)
         GPIO.output(stepPin, GPIO.LOW)
@@ -92,7 +95,7 @@ def counterClockwise():
     print(segment)
     while (segment > 0):
         GPIO.output(enablePin, GPIO.LOW)
-        GPIO.output(dirPin, GPIO.LOW)
+        GPIO.output(dirPin, GPIO.HIGH)
         GPIO.output(stepPin, GPIO.HIGH)
         time.sleep(nemaSleepTime)
         GPIO.output(stepPin, GPIO.LOW)
@@ -238,7 +241,8 @@ def changeNumberStacks(slider_value):
     print("You will shoot " + str(numberStacks) + " stacks")
 
 
-def shoot(path):
+def shoot():
+    global path
     global shotNumber
     print(shotNumber)
     if (shotNumber < 10):
@@ -246,6 +250,17 @@ def shoot(path):
     else:
         camera.capture(path + "/" + str(shotNumber) + ".jpg")
     shotNumber += 1
+    
+def dslrTrigger():
+    global shotNumber
+    global objectName
+    print(shotNumber)
+    if (shotNumber < 10):
+        dslr.take_picture(objectName.value + "/" + str(shotNumber) + ".jpg")
+    else:
+        dslr.take_picture(objectName.value + "/" + str(shotNumber) + ".jpg")
+    shotNumber += 1
+    
     
 def goHome():
     global sliderPosition
@@ -274,13 +289,28 @@ def runStackRoutine():
     
     global numberShots
     for x in range(0,numberShots):
-        shoot(path)
+        shoot()
         time.sleep(shotPause)
         forward()
         time.sleep(shotPause)
     stackNumber += 1
     resetShotNumber()
     camera.resolution = (2592, 1944)
+    
+def dslrStack():
+    global objectName
+    global stackNumber
+    path = objectName.value + "_" + str(stackNumber)
+    #os.mkdir('/home/pi/Desktop/DSLR-photos/' + path)
+    
+    global numberShots
+    for x in range(0,numberShots):
+        dslrTrigger()
+        time.sleep(dslrShotPause)
+        dslrForward()
+        time.sleep(dslrShotPause)
+    stackNumber += 1
+    resetShotNumber()
     
 def runFullRoutine():
     global camera
@@ -346,7 +376,7 @@ spacer = Text(app, text="")
 
 
 actionBox = Box(app, layout="grid")
-PushButton(actionBox, command=shoot(path), text="Take Shot", grid=[0,0])
+PushButton(actionBox, command=shoot, text="Take Shot", grid=[0,0])
 PushButton(actionBox, command=zeroSlider, text="Zero Slider", grid=[1,0])
 PushButton(actionBox, command=goHome, text="Go Home", grid=[2,0])
 PushButton(actionBox, command=runStackRoutine, text="Shoot Stack", grid=[3,0])
@@ -366,10 +396,11 @@ spacer = Text(app, text="")
 dslrSliderBox = Box(app, layout="grid")
 PushButton(dslrSliderBox, command=dslrForward, text="DSLR Forward", grid=[1,0])
 PushButton(dslrSliderBox, command=dslrReverse, text="DSLR Reverse", grid=[0,0])
-PushButton(dslrSliderBox, command=dslrGoHome, text="Send DSLR Home", grid=[2,0])
+PushButton(dslrSliderBox, command=dslrTrigger, text="Take DSLR photo", grid=[2,0])
 Slider(app, command=changeDslrCyclesLinear, start=0, end=10000, width=300)
 spacer = Text(app, text="Distance Between DSLR Positions")
 
 PushButton(app, command=runFullRoutine, text="Run Full Routine")
+PushButton(app, command=dslrStack, text="Run DSLR Stack")
 
 app.display()
